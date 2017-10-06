@@ -5,13 +5,6 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
-# For more information about using CMake with Android Studio, read the
-# documentation: https://d.android.com/studio/projects/add-native-code.html
-
-# Sets the minimum version of CMake required to build the native library.
-
-cmake_minimum_required(VERSION 3.4.1)
-
 set(PARI_TOOLCHAIN ${CMAKE_CURRENT_SOURCE_DIR}/pari-toolchain)
 
 #create a custom toolchain
@@ -35,19 +28,21 @@ ELSE()
 ENDIF()
 
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/pari.cfg.in ${PARI_SRC}/pari.cfg)
+configure_file(${CPP_SRC}/pari.cfg.in ${PARI_SRC}/pari.cfg)
 MESSAGE(STATUS "Building pari for android")
 EXECUTE_PROCESS(COMMAND bash Configure -l pari.cfg WORKING_DIRECTORY ${PARI_SRC})
 EXECUTE_PROCESS(COMMAND make -j4 WORKING_DIRECTORY ${PARI_SRC}/Oandroid-arm)
 
 set(PARI_INCLUDES ${CPP_SRC}/includes)
-# Gather generated headers
+
+#Gather generated headers
 file(GLOB HeaderFiles ${PARI_SRC}/Oandroid-arm/*.h
                       ${PARI_SRC}/src/headers/*.h)
 foreach(HeaderFile ${HeaderFiles})
   file(COPY ${HeaderFile} DESTINATION ${PARI_INCLUDES})
 endforeach()
 
+#add built pari library
 add_library( pari-lib STATIC IMPORTED )
 set_target_properties( # Specifies the target library.
                        pari-lib
