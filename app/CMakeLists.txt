@@ -34,12 +34,9 @@ set(PARI_TOOLCHAIN ${CMAKE_CURRENT_SOURCE_DIR}/toolchains/pari-toolchain-${ANDRO
 IF( IS_DIRECTORY ${PARI_TOOLCHAIN}/bin)
     MESSAGE(STATUS "previously generated toolchain detected.")
 ELSE()
+    MESSAGE(STATUS ${ANDROID_ARCH} " toolchain not found, creating.")
     EXECUTE_PROCESS (COMMAND python ${ANDROID_NDK}/build/tools/make_standalone_toolchain.py --arch ${ANDROID_ARCH} --api ${ANDROID_MIN_API} --stl gnustl --install-dir=${PARI_TOOLCHAIN})
 ENDIF()
-
-
-#copy the required headers to the new toolchain
-#file(COPY /usr/include/termios.h DESTINATION ${PARI_TOOLCHAIN}/sysroot/usr/include)
 
 #download the sources for pari
 set(CPP_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp)
@@ -47,6 +44,7 @@ set(PARI_SRC ${CPP_SRC}/pari)
 IF( IS_DIRECTORY ${PARI_SRC})
     MESSAGE(STATUS "pari sources already exist")
 ELSE()
+    MESSAGE(STATUS "fetching pari sources from Git.")
     EXECUTE_PROCESS (COMMAND git clone http://pari.math.u-bordeaux.fr/git/pari.git ${PARI_SRC})
 ENDIF()
 
@@ -58,8 +56,7 @@ EXECUTE_PROCESS(COMMAND make -j4 WORKING_DIRECTORY ${PARI_SRC}/Oandroid-${ANDROI
 
 set(PARI_INCLUDES ${CPP_SRC}/includes)
 # Gather generated headers
-file(GLOB HeaderFiles ${PARI_SRC}/Oandroid-{ANDROID_ARCH}/*.h
-                      ${PARI_SRC}/src/headers/*.h)
+file(GLOB HeaderFiles ${PARI_SRC}/src/headers/*.h)
 foreach(HeaderFile ${HeaderFiles})
   file(COPY ${HeaderFile} DESTINATION ${PARI_INCLUDES})
 endforeach()
@@ -73,7 +70,8 @@ find_library( log-lib log )
 
 add_library( native-lib SHARED src/main/cpp/native-lib.cpp )
 target_include_directories(native-lib PRIVATE
-                           ${PARI_INCLUDES})
+                           ${PARI_INCLUDES}
+                           ${PARI_SRC}/Oandroid-${ANDROID_ARCH})
 
 #link the built library to built version of Pari
 target_link_libraries( native-lib android ${log-lib} pari-lib )
